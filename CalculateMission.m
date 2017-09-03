@@ -1,4 +1,8 @@
 function [p, w] = CalculateMission( p, w )
+% Calculate Mission
+% I/O
+% p: mission profile, 1xN cell array of 1x1 structs
+% w: weights, 1x1 struct
 
 %% Convert units
 for i=1:length(p)
@@ -18,16 +22,19 @@ end
 
 %% Calculate mff for each segment
 w.takeoff = sym('W_TO');
-MFF = 1;
+w.MFF = 1;
 for i=1:length(p)
-    if ~isfield(p{i}, 'mff')    % if mff specified, just use that
+    if ~isfield(p{i}, 'mff')    % if mff already specified, just use that
         switch p{i}.seg
             case 'STARTUP'
                 p{i}.mff = 0.990;
+                warning('Using default startup ratio');
             case 'TAXI'
                 p{i}.mff = 0.9925;
+                warning('Using default taxi ratio');
             case 'TAKEOFF'
                 p{i}.mff = 0.995;
+                warning('Using default takeoff ratio');
             case 'CLIMB'
                 alt_change = p{i+1}.alt - p{i-1}.alt;
                 p{i}.duration = alt_change / p{i}.RoC;
@@ -37,11 +44,12 @@ for i=1:length(p)
             case 'CRUISE'
                 p{i}.mff = BreguetRange( p{i}.range, p{i}.speed, p{i}.C, p{i}.LD );
             case 'DESCENT'
-                % Put something here if feeling fancy
+                p{i}.mff = 0.9875;
+                warning('Using default descent ratio');
             case 'RELEASE'
                 p{i}.mff = 1;
-                W_at_release = (1 - MFF) * w.takeoff;
                 w.payload = w.payload + p{i}.dropped_weight;
+                W_at_release = (1 - w.MFF) * w.takeoff;
                 p{i+1}.bomb_ratio = (W_at_release - p{i}.dropped_weight) ...
                     / W_at_release;
                 p{i}.alt = p{i-1}.alt;
@@ -49,22 +57,24 @@ for i=1:length(p)
             case 'RESERVES'
                 p{i}.mff = BreguetLoiter( p{i}.duration, p{i}.C, p{i}.LD );
             case 'REFUEL'
-                p{i}.mff = 1 / MFF; % Not convinced this works
+                p{i}.mff = 1 / w.MFF;
+                warning(['Make sure that final MFF is smaller than ' w.MFF]);
             case 'LANDING'
                 p{i}.mff = 0.992;
+                warning('Using default landing ratio');
             otherwise
-                MFF = 0;
-                warning('Unknown Stage Type')
+                w.MFF = 0;
+                warning('Unknown Stage Type');
         end
     end
     if isfield(p{i}, 'bomb_ratio')
         p{i}.mff = 1 - (1 - p{i}.mff) * p{i}.bomb_ratio;
     end
-    MFF = MFF * p{i}.mff;
+    w.MFF = w.MFF * p{i}.mff;
 end
 
-%% Get the equation
-w.fuel = 1.05 * w.takeoff * (1 - MFF);
+%% Get weight expressions
+w.fuel = 1.05 * w.takeoff * (1 - w.MFF);
 w.empty = w.takeoff - w.fuel - w.payload - w.crew;
 
 end
