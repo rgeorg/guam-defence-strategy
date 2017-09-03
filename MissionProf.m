@@ -15,6 +15,7 @@ classdef MissionProf < handle
         vTo
         vPriorClimb
         mff
+        initMff
         overallMff
         storeWeight = 10000
         cruiseIndex
@@ -75,7 +76,7 @@ classdef MissionProf < handle
              obj.vPriorClimb = obj.vTo;
              bombRatio = 1;
             %calculate MFF for each stage
-            obj.overallMff = obj.warmup * obj.taxi * obj.takeoff * obj.landing;
+            obj.initMff = obj.warmup * obj.taxi * obj.takeoff;
             for i=1:length(obj.stage)
                 obj.stageString = obj.stage{i};
                 %Checks if stage is for a store release, if it is calculate
@@ -88,7 +89,7 @@ classdef MissionProf < handle
                     obj.mff(i) = mffStageCalc(obj);
                                                     
                     %Setup for the weight correction in the next stage
-                    wAtRelease = (1-prod(obj.mff)) * obj.WtoGuess;
+                    wAtRelease = (1-prod([obj.initMff, obj.mff])) * obj.WtoGuess;
                     bombRatio = (wAtRelease - obj.storeWeight) / wAtRelease;
                     releaseNext = 1;
                 elseif releaseNext == 1
@@ -106,7 +107,7 @@ classdef MissionProf < handle
                 %Bombs were not released and we assume they weren't carried
                 obj.storeWeight = 0;
             end
-            obj.overallMff = obj.overallMff * prod(obj.mff);
+            obj.overallMff = prod([obj.initMff, obj.mff, obj.landing]);
         end
         function MFF = mffStageCalc(obj)
             switch (obj.stageString)
