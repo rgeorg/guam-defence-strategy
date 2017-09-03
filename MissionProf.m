@@ -112,6 +112,7 @@ classdef MissionProf < handle
         function MFF = mffStageCalc(obj)
             switch (obj.stageString)
                 case 'climb'
+                    % TODO: use loiter eqn?
                     %calc range credit
                     a = speedOfSound(obj);
                     nextCruiseVelo = obj.cruiseVelo(obj.cruiseIndex)*a;
@@ -130,6 +131,7 @@ classdef MissionProf < handle
                     %RELEASE
                     MFF = 1; %Placeholder in case it is required in the future
                 case 'descent'
+                    % TODO: use loiter eqn and rate of descent?
                     %DESCENT
                     MFF = 0.9875;
                 case 'reserves'
