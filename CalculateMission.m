@@ -1,8 +1,23 @@
 function [p, w] = CalculateMission( p, w )
-% Calculate Mission
+%% Calculate Mission
 % I/O
 % p: mission profile, 1xN cell array of 1x1 structs
 % w: weights, 1x1 struct
+
+%% Profile Scheme
+% A profile consists of a list of segments. The segments are processed
+% sequentially. If a segment has a property of mff, that value will be
+% used. Otherwise, the segment type and other properties will be used to
+% compute mff for that segment.
+% Parameters which may be specified:
+% - speed       ft/s
+% - alt         ft
+% - RoC         ft/min
+% - LD          - 
+% - C           1/hr
+% - mach        -
+% - range       ft
+% - duration    min
 
 %% Convert units
 for i=1:length(p)
@@ -17,6 +32,10 @@ for i=1:length(p)
     % Convert duration, min -> sec
     if isfield(p{i}, 'duration')
         p{i}.duration = p{i}.duration * 60;
+    end
+    % Convert rate of climb, ft/min -> ft/sec
+    if isfield(p{i}, 'RoC')
+        p{i}.RoC = p{i}.RoC * 60;
     end
 end
 
@@ -47,13 +66,16 @@ for i=1:length(p)
                 p{i}.mff = 0.9875;
                 warning('Using default descent ratio');
             case 'RELEASE'
-                p{i}.mff = 1;
+                if isfield(p{i}, 'duration')
+                    p{i}.mff = BreguetLoiter( p{i}.duration, p{i}.C, p{i}.LD );
+                else
+                    p{i}.mff = 1;
+                    warning('Assuming release segment is instantaneous');
+                end
                 w.payload = w.payload + p{i}.dropped_weight;
                 W_at_release = (1 - w.MFF) * w.takeoff;
                 p{i+1}.bomb_ratio = (W_at_release - p{i}.dropped_weight) ...
                     / W_at_release;
-                p{i}.alt = p{i-1}.alt;
-                p{i}.speed = p{i-1}.speed;
             case 'RESERVES'
                 p{i}.mff = BreguetLoiter( p{i}.duration, p{i}.C, p{i}.LD );
             case 'REFUEL'
@@ -74,7 +96,7 @@ for i=1:length(p)
 end
 
 %% Get weight expressions
-w.fuel = 1.05 * w.takeoff * (1 - w.MFF);
+w.fuel = w.reserve_fraction * w.takeoff * (1 - w.MFF);
 w.empty = w.takeoff - w.fuel - w.payload - w.crew;
 
 end
