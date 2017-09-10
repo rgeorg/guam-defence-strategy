@@ -35,7 +35,7 @@ for i=1:length(p)
     end
     % Convert rate of climb, ft/min -> ft/sec
     if isfield(p{i}, 'RoC')
-        p{i}.RoC = p{i}.RoC * 60;
+        p{i}.RoC = p{i}.RoC / 60;
     end
 end
 
