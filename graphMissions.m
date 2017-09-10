@@ -340,10 +340,6 @@ yline = [8e3 2e5];
 xline = 10.^(A+B.*log10(yline));
 loglog(xline, yline);
 
-%% Format plot
-title('Technology diagram','interpreter','latex');
-xlabel('Gross take-off weight $W_{TO}$, kg','interpreter','latex');
-ylabel('Empty weight $W_{E}$, kg','interpreter','latex');
 xlim([1e4 4e5]);
 ylim([8e3 2e5]);
 
@@ -365,6 +361,11 @@ fplot(Weights_4.empty, xlim);
 fplot(Weights_5.empty, xlim);
 fplot(Weights_6.empty, xlim);
 %}
+
+%% Format plot
+title('Technology diagram','interpreter','latex');
+xlabel('Gross take-off weight $W_{TO}$, kg','interpreter','latex');
+ylabel('Empty weight $W_{E}$, kg','interpreter','latex');
 
 legend({'Technology Line', ...
     'High Level', ...
